@@ -902,8 +902,14 @@
                     <h2 class="section-title">Theme History</h2>
                 
                 <div class="history-controls">
-                    <span>Last 12 months of themes</span>
-                    <button class="btn-secondary" id="addHistoryBtn">+ Add Historical Entry</button>
+                    <div>
+                        <span>Last 12 months of themes</span>
+                        <span id="syncStatus" style="margin-left: 15px; color: #666; font-size: 0.9em;"></span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-secondary" id="refreshHistoryBtn">🔄 Refresh</button>
+                        <button class="btn-secondary" id="addHistoryBtn">+ Add to Google Sheet</button>
+                    </div>
                 </div>
 
                 <table class="history-table">
@@ -1072,27 +1078,92 @@
             clubMadeThemes: [],
             sessionThemes: [],
             currentThemes: [],
-            selectedCategory: null
+            selectedCategory: null,
+            lastSyncTime: null
         };
 
-        // Initialize existing history
-        const existingHistory = {
-            "2023-07": "Americana",
-            "2024-03": "Spring has sprung",
-            "2024-05": "Shadows",
-            "2024-06": "Summer is here",
-            "2024-07": "Americana",
-            "2025-05": "The extraordinary in the ordinary",
-            "2025-06": "Americana",
-            "2025-07": "Simple Joy",
-            "2025-08": "Weather"
-        };
+        // Google Sheets configuration
+        const SHEET_ID = '1pcaJNOQlzyxkfuOFVSDOQLWdAPbiy7GmvJixtILRwM4';
+        const SHEET_RANGE = 'A2:D100'; // Rows 2-100 (skipping header)
+        const SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_RANGE}?key=AIzaSyBMz_1mscl8DjLHSBxGx9Wh8YyKxyDvDlk`;
+
+        // Fetch history from Google Sheets
+        async function fetchHistoryFromSheet() {
+            try {
+                const response = await fetch(SHEETS_API_URL);
+                const data = await response.json();
+                
+                if (data.values) {
+                    const sheetHistory = {};
+                    data.values.forEach(row => {
+                        if (row.length >= 3) {
+                            const month = row[0].padStart(2, '0');
+                            const year = row[1];
+                            const theme = row[2];
+                            const monthKey = `${year}-${month}`;
+                            sheetHistory[monthKey] = theme;
+                        }
+                    });
+                    
+                    appState.history = sheetHistory;
+                    appState.lastSyncTime = new Date();
+                    updateClubMadeThemes();
+                    saveState();
+                    updateHistoryTable();
+                    updateSyncStatus();
+                    
+                    return true;
+                }
+            } catch (error) {
+                console.error('Failed to fetch from Google Sheets:', error);
+                // Fall back to local data if sheet fails
+                loadLocalHistoryFallback();
+                return false;
+            }
+        }
+
+        // Fallback to local history if sheet fails
+        function loadLocalHistoryFallback() {
+            const fallbackHistory = {
+                "2023-07": "Americana",
+                "2024-03": "Spring has sprung",
+                "2024-05": "Shadows",
+                "2024-06": "Summer is here",
+                "2024-07": "Americana",
+                "2025-05": "The extraordinary in the ordinary",
+                "2025-06": "Americana",
+                "2025-07": "Simple Joy",
+                "2025-08": "Weather"
+            };
+            
+            if (Object.keys(appState.history).length === 0) {
+                appState.history = fallbackHistory;
+                updateClubMadeThemes();
+                saveState();
+            }
+        }
+
+        // Update sync status display
+        function updateSyncStatus() {
+            const syncStatus = document.getElementById('syncStatus');
+            if (syncStatus && appState.lastSyncTime) {
+                const timeStr = appState.lastSyncTime.toLocaleTimeString();
+                syncStatus.textContent = `Last synced: ${timeStr}`;
+            }
+        }
 
         // Initialize app
-        function initApp() {
+        async function initApp() {
             loadState();
             populateYearSelects();
-            updateHistoryTable();
+            
+            // Try to fetch from Google Sheets first
+            const sheetLoaded = await fetchHistoryFromSheet();
+            if (!sheetLoaded) {
+                // Use local/cached data if sheet fails
+                updateHistoryTable();
+            }
+            
             updateThemesDatabase();
             attachEventListeners();
             setCurrentMonthDefaults();
@@ -1127,17 +1198,14 @@
                     history: fullState.history || {},
                     clubMadeThemes: fullState.clubMadeThemes || [],
                     sessionThemes: fullState.sessionThemes || [],
-                    currentThemes: fullState.currentThemes || []
+                    currentThemes: fullState.currentThemes || [],
+                    selectedCategory: fullState.selectedCategory || null,
+                    lastSyncTime: fullState.lastSyncTime ? new Date(fullState.lastSyncTime) : null
                 };
                 // Restore edited standard themes if they exist
                 if (fullState.standardThemes) {
                     Object.assign(standardThemes, fullState.standardThemes);
                 }
-            } else {
-                // Initialize with existing history
-                appState.history = existingHistory;
-                updateClubMadeThemes();
-                saveState();
             }
         }
 
@@ -1732,13 +1800,21 @@
                 document.getElementById('markUsedModal').style.display = 'flex';
             });
             
+            // Refresh history button
+            document.getElementById('refreshHistoryBtn').addEventListener('click', async () => {
+                const btn = document.getElementById('refreshHistoryBtn');
+                btn.disabled = true;
+                btn.textContent = '⏳ Loading...';
+                
+                await fetchHistoryFromSheet();
+                
+                btn.disabled = false;
+                btn.textContent = '🔄 Refresh';
+            });
+            
             // Add history button
             document.getElementById('addHistoryBtn').addEventListener('click', () => {
-                document.getElementById('historyMonth').value = '';
-                document.getElementById('historyYear').value = new Date().getFullYear();
-                document.getElementById('historyTheme').value = '';
-                document.getElementById('modalTitle').textContent = 'Add Historical Entry';
-                document.getElementById('historyModal').style.display = 'flex';
+                alert('To add a new entry:\n\n1. Open the Google Sheet directly\n2. Add your entry in the next available row\n3. Click Refresh to see it here\n\nSheet URL: https://docs.google.com/spreadsheets/d/' + SHEET_ID);
             });
             
             // History modal save
@@ -1770,11 +1846,17 @@
                 const year = document.getElementById('usedYear').value;
                 
                 if (theme) {
-                    const monthKey = `${year}-${month}`;
-                    appState.history[monthKey] = theme;
-                    updateClubMadeThemes();
-                    saveState();
-                    updateHistoryTable();
+                    // Show instructions for updating Google Sheet
+                    alert(`To record "${theme}" as the winner for ${month}/${year}:\n\n` +
+                          `1. Open the Google Sheet\n` +
+                          `2. Add a new row with:\n` +
+                          `   - Month: ${month}\n` +
+                          `   - Year: ${year}\n` +
+                          `   - Theme: ${theme}\n` +
+                          `   - Category: ${getThemeCategory(theme)}\n` +
+                          `3. Save the sheet\n` +
+                          `4. Click Refresh here to see the update\n\n` +
+                          `Sheet URL: https://docs.google.com/spreadsheets/d/${SHEET_ID}`);
                     
                     // Reset UI
                     document.getElementById('customTheme').value = '';
