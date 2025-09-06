@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Photo Theme Picker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .main-content {
+            padding: 0;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f0f0f0;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .tab-button:hover {
+            background: #e0e0e0;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #764ba2;
+            font-weight: bold;
+            border-bottom: 3px solid #764ba2;
+            margin-bottom: -2px;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #764ba2;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .generate-section {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #ddd;
+            padding: 10px 25px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 5px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            border-color: #ccc;
+        }
+
+        .themes-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .theme-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .theme-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-color: #764ba2;
+        }
+
+        .theme-number {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .theme-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .theme-category {
+            font-size: 0.9em;
+            color: #666;
+            background: #f5f5f5;
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .category-human { background: #ffe0e0; color: #c00; }
+        .category-seasonal { background: #fff4e0; color: #f90; }
+        .category-nature { background: #e0ffe0; color: #090; }
+        .category-time { background: #e0f0ff; color: #069; }
+        .category-emotions { background: #ffe0ff; color: #909; }
+        .category-form { background: #f0e0ff; color: #609; }
+        .category-colors { background: #ffffe0; color: #990; }
+        .category-club-made { 
+            background: linear-gradient(135deg, #667eea20, #764ba220); 
+            color: #764ba2;
+            font-weight: bold;
+        }
+
+        .custom-theme-section {
+            background: #f9f9f9;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .custom-theme-input {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 1.1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .custom-theme-input:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .history-section {
+            background: #f9f9f9;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .history-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .history-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .history-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .history-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .edit-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            font-size: 1.5em;
+            color: #764ba2;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .shuffle-info {
+            text-align: center;
+            margin: 10px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .july-special {
+            background: linear-gradient(45deg, #ff0000, #ffffff, #0000ff);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .themes-database {
+            display: grid;
+            gap: 30px;
+        }
+
+        .category-section {
+            background: #f9f9f9;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .category-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        .category-count {
+            background: #764ba2;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .themes-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .theme-chip {
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #e0e0e0;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-chip:hover {
+            border-color: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .theme-chip .delete-theme {
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+        }
+
+        .theme-chip .delete-theme:hover {
+            background: #cc0000;
+        }
+
+        .add-theme-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .add-theme-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1em;
+        }
+
+        .add-theme-input input:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        .add-theme-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .add-theme-btn:hover {
+            background: #45a049;
+        }
+
+        /* Database Tab - Sidebar Layout */
+        .database-container {
+            display: flex;
+            height: calc(100vh - 300px);
+            min-height: 500px;
+            gap: 0;
+        }
+
+        .database-sidebar {
+            width: 25%;
+            min-width: 200px;
+            background: #f5f5f5;
+            border-right: 2px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            padding: 20px;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.2em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .category-list {
+            padding: 10px;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .category-item:hover {
+            transform: translateX(5px);
+            border-color: #764ba2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .category-item.active {
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            border-color: #764ba2;
+            font-weight: bold;
+        }
+
+        .category-name {
+            flex: 1;
+        }
+
+        .category-badge {
+            background: #764ba2;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            min-width: 25px;
+            text-align: center;
+        }
+
+        .database-main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .main-title {
+            color: #764ba2;
+            margin: 0;
+        }
+
+        .theme-count {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .themes-grid {
+            margin-bottom: 30px;
+            min-height: 200px;
+            line-height: 0;
+        }
+
+        .theme-pill {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            padding: 8px 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            height: 36px;
+            box-sizing: border-box;
+            min-width: fit-content;
+            margin: 0 8px 8px 0;
+            vertical-align: top;
+            cursor: context-menu;
+            user-select: none;
+        }
+
+        .theme-pill:hover {
+            border-color: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .theme-pill .theme-text {
+            white-space: nowrap;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        /* Context Menu Styles */
+        .context-menu {
+            position: fixed;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 8px 0;
+            z-index: 1000;
+            min-width: 150px;
+            display: none;
+        }
+
+        .context-menu-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-menu-item:hover {
+            background: #f5f5f5;
+        }
+
+        .context-menu-item.delete {
+            color: #ff4444;
+        }
+
+        .context-menu-item.delete:hover {
+            background: #fff5f5;
+        }
+
+        .add-theme-section {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .single-add {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .single-add .add-theme-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1em;
+        }
+
+        .single-add .add-theme-input:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+        }
+
+        .single-add .add-theme-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .single-add .add-theme-btn:hover {
+            background: #45a049;
+        }
+
+        .bulk-import-toggle {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .bulk-import-toggle:hover {
+            background: #e0e0e0;
+            border-color: #764ba2;
+        }
+
+        .bulk-import-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .bulk-import-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            resize: vertical;
+        }
+
+        .bulk-import-textarea:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        .bulk-import-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            gap: 10px;
+        }
+
+        .bulk-count {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .themes-display {
+                grid-template-columns: 1fr;
+            }
+            
+            .history-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                font-size: 0.9em;
+                padding: 12px 5px;
+            }
+
+            /* Database mobile layout */
+            .database-container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .database-sidebar {
+                width: 100%;
+                min-width: unset;
+                max-height: 150px;
+                border-right: none;
+                border-bottom: 2px solid #e0e0e0;
+            }
+
+            .category-list {
+                display: flex;
+                overflow-x: auto;
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .category-item {
+                min-width: 120px;
+                white-space: nowrap;
+            }
+
+            .database-main {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Monthly Photo Theme Picker</h1>
+            <p>Generate random themes for your photo challenge group</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" onclick="switchTab('generator')">🎲 Theme Generator</button>
+                <button class="tab-button" onclick="switchTab('database')">📚 Theme Database</button>
+                <button class="tab-button" onclick="switchTab('history')">📅 History</button>
+            </div>
+
+            <!-- Generator Tab -->
+            <div id="generatorTab" class="tab-content active">
+                <!-- Theme Generation Section -->
+                <div class="section">
+                    <h2 class="section-title">Generate Themes</h2>
+                
+                <div class="generate-section">
+                    <button class="btn-primary" id="generateBtn">Generate 3 Themes</button>
+                    <div class="shuffle-info" id="shuffleInfo" style="display: none;">
+                        <small>Not happy? Keep shuffling for new themes!</small>
+                    </div>
+                </div>
+
+                <div id="julySpecial" class="july-special" style="display: none;">
+                    🇺🇸 July Special: Americana Month! 🇺🇸
+                </div>
+
+                <div class="themes-display" id="themesDisplay"></div>
+
+                <div class="custom-theme-section" id="customThemeSection" style="display: none;">
+                    <label for="customTheme">Add a 4th Custom Theme Option:</label>
+                    <input type="text" class="custom-theme-input" id="customTheme" placeholder="Enter your custom theme idea...">
+                </div>
+
+                <div class="action-buttons" id="actionButtons" style="display: none;">
+                    <button class="btn-secondary" id="shuffleBtn">🔄 Shuffle Again</button>
+                    <button class="btn-primary" id="markUsedBtn">✓ Mark Winner as Used</button>
+                </div>
+                </div>
+            </div>
+
+            <!-- Database Tab -->
+            <div id="databaseTab" class="tab-content">
+                <div class="database-container">
+                    <div class="database-sidebar">
+                        <h3 class="sidebar-title">Categories</h3>
+                        <div class="category-list" id="categoryList">
+                            <!-- Categories will be populated here -->
+                        </div>
+                    </div>
+                    <div class="database-main">
+                        <div class="main-header">
+                            <h2 class="main-title" id="categoryTitle">Select a Category</h2>
+                            <span class="theme-count" id="themeCount"></span>
+                        </div>
+                        <div class="themes-grid" id="themesGrid">
+                            <!-- Themes will be populated here -->
+                        </div>
+                        <div class="add-theme-section" id="addThemeSection" style="display: none;">
+                            <div class="single-add">
+                                <input type="text" 
+                                       class="add-theme-input" 
+                                       id="singleThemeInput" 
+                                       placeholder="Add new theme">
+                                <button class="add-theme-btn" id="addSingleTheme">+ Add</button>
+                            </div>
+                            <button class="bulk-import-toggle" id="bulkImportToggle">📋 Bulk Import</button>
+                            <div class="bulk-import-section" id="bulkImportSection" style="display: none;">
+                                <textarea class="bulk-import-textarea" 
+                                          id="bulkImportTextarea" 
+                                          placeholder="Enter multiple themes (one per line or comma-separated)"
+                                          rows="5"></textarea>
+                                <div class="bulk-import-actions">
+                                    <span class="bulk-count" id="bulkCount"></span>
+                                    <button class="btn-secondary" id="cancelBulkImport">Cancel</button>
+                                    <button class="btn-primary" id="confirmBulkImport">Import Themes</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="historyTab" class="tab-content">
+                <div class="section history-section">
+                    <h2 class="section-title">Theme History</h2>
+                
+                <div class="history-controls">
+                    <span>Last 12 months of themes</span>
+                    <button class="btn-secondary" id="addHistoryBtn">+ Add Historical Entry</button>
+                </div>
+
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Theme</th>
+                            <th>Category</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- History will be populated here -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item delete" id="deleteThemeItem">
+            <span>🗑️</span>
+            <span id="deleteThemeText">Delete theme</span>
+        </div>
+    </div>
+
+    <!-- Modal for editing history -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <h3 class="modal-header" id="modalTitle">Add Historical Entry</h3>
+            
+            <div class="form-group">
+                <label for="historyMonth">Month:</label>
+                <select id="historyMonth">
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="historyYear">Year:</label>
+                <select id="historyYear">
+                    <!-- Years will be populated dynamically -->
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="historyTheme">Theme:</label>
+                <input type="text" id="historyTheme" placeholder="Enter the theme used">
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn-secondary" id="modalCancel">Cancel</button>
+                <button class="btn-primary" id="modalSave">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for marking theme as used -->
+    <div class="modal" id="markUsedModal">
+        <div class="modal-content">
+            <h3 class="modal-header">Mark Theme as Used</h3>
+            
+            <div class="form-group">
+                <label for="winningTheme">Select the winning theme:</label>
+                <select id="winningTheme">
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="usedMonth">Month:</label>
+                <select id="usedMonth">
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="usedYear">Year:</label>
+                <select id="usedYear">
+                    <!-- Years will be populated dynamically -->
+                </select>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn-secondary" id="markUsedCancel">Cancel</button>
+                <button class="btn-primary" id="markUsedSave">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Database
+        const standardThemes = {
+            "the human environment": [
+                "local streetscape", "famous places", "urban landscape", "industrial landscape",
+                "small towns", "markets", "people at work", "people at play", "children",
+                "faces", "couples", "family", "strangers", "self-portrait", "hands",
+                "environmental portraits", "street photography", "candid", "posed portraits",
+                "group portraits", "architecture", "interiors", "doors", "windows",
+                "bridges", "ruins", "religious buildings", "modern buildings", "historic buildings",
+                "transportation", "cars", "trains", "bicycles", "motorcycles", "airplanes",
+                "boats", "public transport", "graffiti", "signs", "urban decay", "construction sites"
+            ],
+            "seasonal": [
+                "Christmas", "Easter", "Halloween", "Thanksgiving", "New Year",
+                "Valentine's Day", "Fourth of July", "spring", "summer", "autumn", "winter"
+            ],
+            "nature": [
+                "sky and cloud", "water in motion", "trees", "flowers", "insects",
+                "birds", "animals", "pets", "wildlife", "landscapes", "seascapes",
+                "mountains", "forests", "deserts", "rivers", "lakes", "waterfalls",
+                "storms", "fog"
+            ],
+            "time of day": [
+                "sunset", "sunrise", "blue hour", "golden hour", "night", "midday"
+            ],
+            "emotions": [
+                "peace & tranquility", "strife & war", "joy", "sadness", "anger",
+                "fear", "surprise", "disgust", "anticipation", "love", "loneliness"
+            ],
+            "form & techniques": [
+                "circles", "movement", "patterns", "texture", "shadows", "reflections",
+                "silhouettes", "macro", "abstract", "minimalism", "symmetry", "leading lines",
+                "rule of thirds", "framing", "depth of field", "bokeh", "long exposure",
+                "high key", "low key", "black and white", "selective color", "double exposure",
+                "panorama", "HDR", "tilt-shift", "light painting", "star trails", "time-lapse",
+                "composite", "multiple exposure", "negative space", "juxtaposition", "repetition",
+                "contrast", "balance"
+            ],
+            "colors": [
+                "red", "orange", "yellow", "green", "blue", "purple", "pink",
+                "brown", "black", "white"
+            ]
+        };
+
+        // Special theme
+        const specialTheme = "Americana";
+
+        // Application state
+        let appState = {
+            history: {},
+            clubMadeThemes: [],
+            sessionThemes: [],
+            currentThemes: [],
+            selectedCategory: null
+        };
+
+        // Initialize existing history
+        const existingHistory = {
+            "2023-07": "Americana",
+            "2024-03": "Spring has sprung",
+            "2024-05": "Shadows",
+            "2024-06": "Summer is here",
+            "2024-07": "Americana",
+            "2025-05": "The extraordinary in the ordinary",
+            "2025-06": "Americana",
+            "2025-07": "Simple Joy",
+            "2025-08": "Weather"
+        };
+
+        // Initialize app
+        function initApp() {
+            loadState();
+            populateYearSelects();
+            updateHistoryTable();
+            updateThemesDatabase();
+            attachEventListeners();
+            setCurrentMonthDefaults();
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+
+            // Refresh database view if switching to it
+            if (tabName === 'database') {
+                updateThemesDatabase();
+            }
+        }
+
+        // Load state from localStorage or initialize
+        function loadState() {
+            const savedState = localStorage.getItem('photoThemePickerState');
+            if (savedState) {
+                const fullState = JSON.parse(savedState);
+                appState = {
+                    history: fullState.history || {},
+                    clubMadeThemes: fullState.clubMadeThemes || [],
+                    sessionThemes: fullState.sessionThemes || [],
+                    currentThemes: fullState.currentThemes || []
+                };
+                // Restore edited standard themes if they exist
+                if (fullState.standardThemes) {
+                    Object.assign(standardThemes, fullState.standardThemes);
+                }
+            } else {
+                // Initialize with existing history
+                appState.history = existingHistory;
+                updateClubMadeThemes();
+                saveState();
+            }
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            const fullState = {
+                ...appState,
+                standardThemes: standardThemes
+            };
+            localStorage.setItem('photoThemePickerState', JSON.stringify(fullState));
+        }
+
+        // Update club made themes from history
+        function updateClubMadeThemes() {
+            const allStandardThemes = [];
+            for (const category in standardThemes) {
+                allStandardThemes.push(...standardThemes[category]);
+            }
+            allStandardThemes.push(specialTheme);
+
+            appState.clubMadeThemes = [];
+            for (const month in appState.history) {
+                const theme = appState.history[month];
+                if (!allStandardThemes.includes(theme) && !appState.clubMadeThemes.includes(theme)) {
+                    appState.clubMadeThemes.push(theme);
+                }
+            }
+        }
+
+        // Get category for a theme
+        function getThemeCategory(theme) {
+            for (const category in standardThemes) {
+                if (standardThemes[category].includes(theme)) {
+                    return category;
+                }
+            }
+            if (theme === specialTheme) {
+                return "special";
+            }
+            if (appState.clubMadeThemes.includes(theme)) {
+                return "club made";
+            }
+            return "club made"; // Default for custom themes
+        }
+
+        // Calculate weight for a theme
+        function getThemeWeight(theme) {
+            const now = new Date();
+            let mostRecentUse = null;
+
+            for (const month in appState.history) {
+                if (appState.history[month] === theme) {
+                    const useDate = new Date(month + '-01');
+                    if (!mostRecentUse || useDate > mostRecentUse) {
+                        mostRecentUse = useDate;
+                    }
+                }
+            }
+
+            if (!mostRecentUse) return 1.0;
+
+            const monthsDiff = (now.getFullYear() - mostRecentUse.getFullYear()) * 12 + 
+                              (now.getMonth() - mostRecentUse.getMonth());
+
+            if (monthsDiff > 6) return 1.0;
+            if (monthsDiff > 3) return 0.2;
+            return 0.1;
+        }
+
+        // Get weighted random theme
+        function getWeightedRandomThemes(count) {
+            const now = new Date();
+            const isJuly = now.getMonth() === 6; // JavaScript months are 0-indexed
+
+            // July special case
+            if (isJuly) {
+                return Array(count).fill(specialTheme);
+            }
+
+            // Collect all themes with weights
+            const allThemes = [];
+            
+            // Add standard themes
+            for (const category in standardThemes) {
+                for (const theme of standardThemes[category]) {
+                    const weight = getThemeWeight(theme);
+                    // Reduce weight if shown in this session
+                    const sessionWeight = appState.sessionThemes.includes(theme) ? 0.8 : 1.0;
+                    allThemes.push({
+                        theme: theme,
+                        category: category,
+                        weight: weight * sessionWeight
+                    });
+                }
+            }
+
+            // Add club made themes
+            for (const theme of appState.clubMadeThemes) {
+                const weight = getThemeWeight(theme);
+                const sessionWeight = appState.sessionThemes.includes(theme) ? 0.8 : 1.0;
+                allThemes.push({
+                    theme: theme,
+                    category: "club made",
+                    weight: weight * sessionWeight
+                });
+            }
+
+            // Weighted random selection
+            const selectedThemes = [];
+            for (let i = 0; i < count; i++) {
+                const totalWeight = allThemes.reduce((sum, t) => sum + t.weight, 0);
+                let random = Math.random() * totalWeight;
+                
+                for (const themeObj of allThemes) {
+                    random -= themeObj.weight;
+                    if (random <= 0) {
+                        selectedThemes.push(themeObj);
+                        // Add to session themes
+                        appState.sessionThemes.push(themeObj.theme);
+                        // Remove from available themes for this generation
+                        allThemes.splice(allThemes.indexOf(themeObj), 1);
+                        break;
+                    }
+                }
+            }
+
+            return selectedThemes;
+        }
+
+        // Generate themes
+        function generateThemes() {
+            const themes = getWeightedRandomThemes(3);
+            appState.currentThemes = themes;
+            displayThemes(themes);
+            
+            // Show additional UI elements
+            document.getElementById('customThemeSection').style.display = 'block';
+            document.getElementById('actionButtons').style.display = 'flex';
+            document.getElementById('shuffleInfo').style.display = 'block';
+            
+            // Show July special message if applicable
+            const now = new Date();
+            const isJuly = now.getMonth() === 6;
+            document.getElementById('julySpecial').style.display = isJuly ? 'block' : 'none';
+        }
+
+        // Display themes
+        function displayThemes(themes) {
+            const display = document.getElementById('themesDisplay');
+            display.innerHTML = '';
+            
+            themes.forEach((themeObj, index) => {
+                const theme = typeof themeObj === 'string' ? themeObj : themeObj.theme;
+                const category = typeof themeObj === 'string' ? getThemeCategory(theme) : themeObj.category;
+                
+                const card = document.createElement('div');
+                card.className = 'theme-card';
+                card.innerHTML = `
+                    <div class="theme-number">${index + 1}</div>
+                    <div class="theme-name">${theme}</div>
+                    <div class="theme-category category-${category.toLowerCase().replace(/[^a-z]/g, '-')}">${category}</div>
+                `;
+                display.appendChild(card);
+            });
+        }
+
+        // Update history table
+        function updateHistoryTable() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            // Get last 12 months
+            const months = [];
+            const now = new Date();
+            for (let i = 0; i < 12; i++) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                months.push(monthKey);
+            }
+            
+            months.forEach(month => {
+                const row = document.createElement('tr');
+                const theme = appState.history[month] || '-';
+                const category = theme === '-' ? '-' : getThemeCategory(theme);
+                
+                row.innerHTML = `
+                    <td>${formatMonth(month)}</td>
+                    <td>${theme}</td>
+                    <td>${category}</td>
+                    <td>
+                        <button class="edit-btn" onclick="editHistory('${month}')">Edit</button>
+                        ${theme !== '-' ? `<button class="delete-btn" onclick="deleteHistory('${month}')">Delete</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Format month for display
+        function formatMonth(monthKey) {
+            const [year, month] = monthKey.split('-');
+            const date = new Date(year, parseInt(month) - 1);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+        }
+
+        // Populate year selects
+        function populateYearSelects() {
+            const currentYear = new Date().getFullYear();
+            const selects = ['historyYear', 'usedYear'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '';
+                for (let year = currentYear + 1; year >= 2020; year--) {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    if (year === currentYear) option.selected = true;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        // Set current month defaults
+        function setCurrentMonthDefaults() {
+            const now = new Date();
+            document.getElementById('historyMonth').value = String(now.getMonth() + 1).padStart(2, '0');
+            document.getElementById('usedMonth').value = String(now.getMonth() + 1).padStart(2, '0');
+        }
+
+        // Edit history entry
+        function editHistory(monthKey) {
+            const [year, month] = monthKey.split('-');
+            document.getElementById('historyMonth').value = month;
+            document.getElementById('historyYear').value = year;
+            document.getElementById('historyTheme').value = appState.history[monthKey] || '';
+            document.getElementById('modalTitle').textContent = 'Edit Historical Entry';
+            document.getElementById('historyModal').style.display = 'flex';
+        }
+
+        // Delete history entry
+        function deleteHistory(monthKey) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                delete appState.history[monthKey];
+                updateClubMadeThemes();
+                saveState();
+                updateHistoryTable();
+            }
+        }
+
+        // Update themes database view
+        function updateThemesDatabase() {
+            populateCategoryList();
+            
+            // Auto-select first category if none selected
+            if (!appState.selectedCategory) {
+                const categories = getSortedCategories();
+                if (categories.length > 0) {
+                    selectCategory(categories[0]);
+                }
+            } else {
+                displayCategoryThemes(appState.selectedCategory);
+            }
+        }
+
+        // Get sorted categories
+        function getSortedCategories() {
+            const categories = [...Object.keys(standardThemes), 'club made'];
+            return categories.sort();
+        }
+
+        // Populate category list in sidebar
+        function populateCategoryList() {
+            const categoryList = document.getElementById('categoryList');
+            const categories = getSortedCategories();
+            
+            categoryList.innerHTML = categories.map(category => {
+                const themes = category === 'club made' ? appState.clubMadeThemes : standardThemes[category];
+                const count = themes.length;
+                const formattedName = formatCategoryName(category);
+                
+                return `
+                    <div class="category-item ${appState.selectedCategory === category ? 'active' : ''}" 
+                         onclick="selectCategory('${category}')">
+                        <span class="category-name">${formattedName}</span>
+                        <span class="category-badge">${count}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Format category name for display
+        function formatCategoryName(category) {
+            return category.split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // Select category
+        function selectCategory(category) {
+            appState.selectedCategory = category;
+            populateCategoryList(); // Update active state
+            displayCategoryThemes(category);
+        }
+
+        // Display themes for selected category
+        function displayCategoryThemes(category) {
+            const themes = category === 'club made' ? appState.clubMadeThemes : standardThemes[category];
+            const sortedThemes = [...themes].sort();
+            
+            // Update header
+            document.getElementById('categoryTitle').textContent = formatCategoryName(category);
+            document.getElementById('themeCount').textContent = `${themes.length} themes`;
+            
+            // Update themes grid
+            const themesGrid = document.getElementById('themesGrid');
+            if (sortedThemes.length === 0) {
+                themesGrid.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No themes yet</h3>
+                        <p>Use the form below to add themes to this category</p>
+                    </div>
+                `;
+            } else {
+                themesGrid.innerHTML = sortedThemes.map(theme => `
+                    <div class="theme-pill" data-theme="${theme}" data-category="${category}">
+                        <span class="theme-text">${theme}</span>
+                    </div>
+                `).join('');
+            }
+            
+            // Show add theme section
+            document.getElementById('addThemeSection').style.display = 'block';
+            
+            // Add right-click event listeners to theme pills
+            document.querySelectorAll('.theme-pill').forEach(pill => {
+                pill.addEventListener('contextmenu', (e) => showContextMenu(e, pill));
+            });
+        }
+
+        // Delete theme from category
+        function deleteThemeFromCategory(category, theme) {
+            if (!confirm(`Delete "${theme}" from ${formatCategoryName(category)}?`)) return;
+
+            if (category === 'club made') {
+                const index = appState.clubMadeThemes.indexOf(theme);
+                if (index > -1) {
+                    appState.clubMadeThemes.splice(index, 1);
+                }
+            } else {
+                const index = standardThemes[category].indexOf(theme);
+                if (index > -1) {
+                    standardThemes[category].splice(index, 1);
+                }
+            }
+
+            saveState();
+            displayCategoryThemes(category);
+            populateCategoryList(); // Update counts
+        }
+
+        // Add single theme to selected category
+        function addSingleTheme() {
+            const input = document.getElementById('singleThemeInput');
+            const theme = input.value.trim();
+
+            if (!theme) {
+                alert('Please enter a theme name');
+                return;
+            }
+
+            const result = addThemeToCategory(appState.selectedCategory, theme);
+            if (result.success) {
+                input.value = '';
+                displayCategoryThemes(appState.selectedCategory);
+                populateCategoryList(); // Update counts
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // Add theme to category with validation
+        function addThemeToCategory(category, theme) {
+            // Check if theme already exists
+            if (doesThemeExist(theme)) {
+                return { success: false, message: 'This theme already exists!' };
+            }
+
+            if (category === 'club made') {
+                appState.clubMadeThemes.push(theme);
+            } else {
+                standardThemes[category].push(theme);
+            }
+
+            saveState();
+            return { success: true };
+        }
+
+        // Check if theme exists in any category
+        function doesThemeExist(theme) {
+            // Check standard themes
+            for (const category in standardThemes) {
+                if (standardThemes[category].includes(theme)) {
+                    return true;
+                }
+            }
+            // Check club made themes
+            return appState.clubMadeThemes.includes(theme);
+        }
+
+        // Toggle bulk import section
+        function toggleBulkImport() {
+            const section = document.getElementById('bulkImportSection');
+            const toggle = document.getElementById('bulkImportToggle');
+            
+            if (section.style.display === 'none' || !section.style.display) {
+                section.style.display = 'block';
+                toggle.textContent = '📋 Hide Bulk Import';
+                document.getElementById('bulkImportTextarea').focus();
+            } else {
+                section.style.display = 'none';
+                toggle.textContent = '📋 Bulk Import';
+                document.getElementById('bulkImportTextarea').value = '';
+                document.getElementById('bulkCount').textContent = '';
+            }
+        }
+
+        // Update bulk count as user types
+        function updateBulkCount() {
+            const textarea = document.getElementById('bulkImportTextarea');
+            const countSpan = document.getElementById('bulkCount');
+            
+            const themes = parseBulkThemes(textarea.value);
+            const validThemes = themes.filter(theme => !doesThemeExist(theme));
+            const duplicates = themes.filter(theme => doesThemeExist(theme));
+            
+            let message = '';
+            if (validThemes.length > 0) {
+                message = `${validThemes.length} new themes to add`;
+            }
+            if (duplicates.length > 0) {
+                message += duplicates.length > 0 ? `, ${duplicates.length} duplicates (will be skipped)` : '';
+            }
+            
+            countSpan.textContent = message;
+        }
+
+        // Parse themes from bulk import text
+        function parseBulkThemes(text) {
+            return text
+                .split(/[,\n]/)
+                .map(theme => theme.trim())
+                .filter(theme => theme.length > 0);
+        }
+
+        // Confirm bulk import
+        function confirmBulkImport() {
+            const textarea = document.getElementById('bulkImportTextarea');
+            const themes = parseBulkThemes(textarea.value);
+            
+            if (themes.length === 0) {
+                alert('Please enter some themes to import');
+                return;
+            }
+
+            const validThemes = themes.filter(theme => !doesThemeExist(theme));
+            const duplicates = themes.filter(theme => doesThemeExist(theme));
+            
+            if (validThemes.length === 0) {
+                alert('All themes already exist!');
+                return;
+            }
+
+            let confirmMessage = `Add ${validThemes.length} new themes to ${formatCategoryName(appState.selectedCategory)}?`;
+            if (duplicates.length > 0) {
+                confirmMessage += `\n\n${duplicates.length} duplicates will be skipped.`;
+            }
+
+            if (confirm(confirmMessage)) {
+                validThemes.forEach(theme => {
+                    addThemeToCategory(appState.selectedCategory, theme);
+                });
+                
+                displayCategoryThemes(appState.selectedCategory);
+                populateCategoryList();
+                
+                // Hide bulk import section and clear
+                toggleBulkImport();
+                
+                alert(`Successfully added ${validThemes.length} themes!`);
+            }
+        }
+
+        // Context menu functionality
+        let contextMenuTarget = null;
+
+        function showContextMenu(e, themePill) {
+            e.preventDefault();
+            
+            const theme = themePill.dataset.theme;
+            const category = themePill.dataset.category;
+            
+            contextMenuTarget = { theme, category };
+            
+            const contextMenu = document.getElementById('contextMenu');
+            document.getElementById('deleteThemeText').textContent = `Delete "${theme}"`;
+            
+            // Position the context menu
+            const x = e.clientX;
+            const y = e.clientY;
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const menuWidth = 150;
+            const menuHeight = 50;
+            
+            // Adjust position if menu would go off screen
+            const left = (x + menuWidth > windowWidth) ? x - menuWidth : x;
+            const top = (y + menuHeight > windowHeight) ? y - menuHeight : y;
+            
+            contextMenu.style.left = left + 'px';
+            contextMenu.style.top = top + 'px';
+            contextMenu.style.display = 'block';
+        }
+
+        function hideContextMenu() {
+            document.getElementById('contextMenu').style.display = 'none';
+            contextMenuTarget = null;
+        }
+
+        function handleContextMenuDelete() {
+            if (contextMenuTarget) {
+                deleteThemeFromCategory(contextMenuTarget.category, contextMenuTarget.theme);
+                hideContextMenu();
+            }
+        }
+
+        // Attach event listeners
+        function attachEventListeners() {
+            // Generate button
+            document.getElementById('generateBtn').addEventListener('click', generateThemes);
+            
+            // Shuffle button
+            document.getElementById('shuffleBtn').addEventListener('click', generateThemes);
+            
+            // Database - Add single theme
+            document.getElementById('addSingleTheme').addEventListener('click', addSingleTheme);
+            document.getElementById('singleThemeInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addSingleTheme();
+                }
+            });
+            
+            // Database - Bulk import
+            document.getElementById('bulkImportToggle').addEventListener('click', toggleBulkImport);
+            document.getElementById('bulkImportTextarea').addEventListener('input', updateBulkCount);
+            document.getElementById('confirmBulkImport').addEventListener('click', confirmBulkImport);
+            document.getElementById('cancelBulkImport').addEventListener('click', toggleBulkImport);
+            
+            // Context menu
+            document.getElementById('deleteThemeItem').addEventListener('click', handleContextMenuDelete);
+            
+            // Hide context menu when clicking elsewhere
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.context-menu') && !e.target.closest('.theme-pill')) {
+                    hideContextMenu();
+                }
+            });
+            
+            // Mark used button
+            document.getElementById('markUsedBtn').addEventListener('click', () => {
+                const select = document.getElementById('winningTheme');
+                select.innerHTML = '';
+                
+                // Add generated themes
+                appState.currentThemes.forEach(themeObj => {
+                    const theme = typeof themeObj === 'string' ? themeObj : themeObj.theme;
+                    const option = document.createElement('option');
+                    option.value = theme;
+                    option.textContent = theme;
+                    select.appendChild(option);
+                });
+                
+                // Add custom theme if entered
+                const customTheme = document.getElementById('customTheme').value.trim();
+                if (customTheme) {
+                    const option = document.createElement('option');
+                    option.value = customTheme;
+                    option.textContent = customTheme + ' (Custom)';
+                    select.appendChild(option);
+                }
+                
+                document.getElementById('markUsedModal').style.display = 'flex';
+            });
+            
+            // Add history button
+            document.getElementById('addHistoryBtn').addEventListener('click', () => {
+                document.getElementById('historyMonth').value = '';
+                document.getElementById('historyYear').value = new Date().getFullYear();
+                document.getElementById('historyTheme').value = '';
+                document.getElementById('modalTitle').textContent = 'Add Historical Entry';
+                document.getElementById('historyModal').style.display = 'flex';
+            });
+            
+            // History modal save
+            document.getElementById('modalSave').addEventListener('click', () => {
+                const month = document.getElementById('historyMonth').value;
+                const year = document.getElementById('historyYear').value;
+                const theme = document.getElementById('historyTheme').value.trim();
+                
+                if (theme) {
+                    const monthKey = `${year}-${month}`;
+                    appState.history[monthKey] = theme;
+                    updateClubMadeThemes();
+                    saveState();
+                    updateHistoryTable();
+                }
+                
+                document.getElementById('historyModal').style.display = 'none';
+            });
+            
+            // History modal cancel
+            document.getElementById('modalCancel').addEventListener('click', () => {
+                document.getElementById('historyModal').style.display = 'none';
+            });
+            
+            // Mark used modal save
+            document.getElementById('markUsedSave').addEventListener('click', () => {
+                const theme = document.getElementById('winningTheme').value;
+                const month = document.getElementById('usedMonth').value;
+                const year = document.getElementById('usedYear').value;
+                
+                if (theme) {
+                    const monthKey = `${year}-${month}`;
+                    appState.history[monthKey] = theme;
+                    updateClubMadeThemes();
+                    saveState();
+                    updateHistoryTable();
+                    
+                    // Reset UI
+                    document.getElementById('customTheme').value = '';
+                    appState.currentThemes = [];
+                    document.getElementById('themesDisplay').innerHTML = '';
+                    document.getElementById('customThemeSection').style.display = 'none';
+                    document.getElementById('actionButtons').style.display = 'none';
+                    document.getElementById('shuffleInfo').style.display = 'none';
+                    document.getElementById('julySpecial').style.display = 'none';
+                }
+                
+                document.getElementById('markUsedModal').style.display = 'none';
+            });
+            
+            // Mark used modal cancel
+            document.getElementById('markUsedCancel').addEventListener('click', () => {
+                document.getElementById('markUsedModal').style.display = 'none';
+            });
+            
+            // Click outside modal to close
+            window.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal')) {
+                    e.target.style.display = 'none';
+                }
+            });
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
