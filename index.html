@@ -1089,51 +1089,73 @@
         // Fetch history from Google Sheets (using CSV format)
         async function fetchHistoryFromSheet() {
             try {
+                console.log('🔍 Fetching from Google Sheets...');
                 const response = await fetch(SHEET_CSV_URL);
                 const csvText = await response.text();
                 
-                // Parse CSV properly handling commas in values
+                console.log('📄 Raw CSV Response:');
+                console.log(csvText);
+                
                 const lines = csvText.split('\n');
                 const sheetHistory = {};
                 
-                // Skip header row (index 0), process data rows
-                for (let i = 1; i < lines.length; i++) {
+                console.log(`📊 Processing ${lines.length} lines from CSV`);
+                
+                // Process each line with extensive debugging
+                for (let i = 0; i < lines.length; i++) {
                     const line = lines[i].trim();
-                    if (!line) continue; // Skip empty lines
                     
-                    // Better CSV parsing that handles commas in quoted values
-                    const matches = line.match(/(?:^|,)("(?:[^"]|"")*"|[^,]*)/g);
-                    if (!matches || matches.length < 3) continue;
+                    console.log(`Line ${i}: "${line}"`);
                     
-                    // Clean up the matched values
-                    const parts = matches.map(m => {
-                        let val = m.replace(/^,/, ''); // Remove leading comma
-                        val = val.replace(/^"(.*)"$/, '$1'); // Remove quotes
-                        val = val.replace(/""/g, '"'); // Unescape double quotes
-                        return val.trim();
-                    });
+                    // Skip header row and empty lines
+                    if (i === 0) {
+                        console.log('↳ Skipping header row');
+                        continue;
+                    }
+                    if (!line) {
+                        console.log('↳ Skipping empty line');
+                        continue;
+                    }
                     
-                    const monthRaw = parts[0];
-                    const yearRaw = parts[1];
-                    const themeRaw = parts[2];
+                    // Try multiple parsing methods
+                    let parsed = false;
                     
-                    // Only process if theme is not empty
-                    if (themeRaw) {
-                        // Parse month and year as integers
-                        const monthNum = parseInt(monthRaw);
-                        const yearNum = parseInt(yearRaw);
+                    // Method 1: Simple split (works if no commas in theme names)
+                    const parts = line.split(',').map(p => p.replace(/"/g, '').trim());
+                    if (parts.length >= 3) {
+                        const monthRaw = parts[0];
+                        const yearRaw = parts[1];
+                        // Join all remaining parts in case theme has commas
+                        const themeRaw = parts.slice(2).join(', ');
                         
-                        // Validate parsed values
-                        if (!isNaN(monthNum) && !isNaN(yearNum) && monthNum >= 1 && monthNum <= 12) {
-                            // Format month with leading zero if needed
-                            const monthFormatted = String(monthNum).padStart(2, '0');
-                            const monthKey = `${yearNum}-${monthFormatted}`;
-                            sheetHistory[monthKey] = themeRaw;
+                        console.log(`↳ Method 1 parsed: Month="${monthRaw}", Year="${yearRaw}", Theme="${themeRaw}"`);
+                        
+                        if (monthRaw && yearRaw && themeRaw) {
+                            const monthNum = parseInt(monthRaw);
+                            const yearNum = parseInt(yearRaw);
                             
-                            console.log(`Added: ${monthKey} = ${themeRaw}`);
+                            if (!isNaN(monthNum) && !isNaN(yearNum) && monthNum >= 1 && monthNum <= 12 && yearNum > 2020) {
+                                const monthFormatted = String(monthNum).padStart(2, '0');
+                                const monthKey = `${yearNum}-${monthFormatted}`;
+                                sheetHistory[monthKey] = themeRaw;
+                                
+                                console.log(`✅ SUCCESS: Added ${monthKey} = "${themeRaw}"`);
+                                parsed = true;
+                            } else {
+                                console.log(`❌ Invalid month/year: month=${monthNum}, year=${yearNum}`);
+                            }
+                        } else {
+                            console.log(`❌ Missing data: month="${monthRaw}", year="${yearRaw}", theme="${themeRaw}"`);
                         }
                     }
+                    
+                    if (!parsed) {
+                        console.log(`❌ FAILED to parse line ${i}: "${line}"`);
+                    }
                 }
+                
+                console.log('📋 Final parsed history:', sheetHistory);
+                console.log(`📊 Total entries parsed: ${Object.keys(sheetHistory).length}`);
                 
                 appState.history = sheetHistory;
                 appState.lastSyncTime = new Date();
@@ -1144,7 +1166,7 @@
                 
                 return true;
             } catch (error) {
-                console.error('Failed to fetch from Google Sheets:', error);
+                console.error('❌ Failed to fetch from Google Sheets:', error);
                 // Fall back to local data if sheet fails
                 loadLocalHistoryFallback();
                 return false;
