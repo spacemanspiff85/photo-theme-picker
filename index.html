@@ -1092,36 +1092,45 @@
                 const response = await fetch(SHEET_CSV_URL);
                 const csvText = await response.text();
                 
-                // Parse CSV - split by newline and filter empty lines
-                const lines = csvText.split('\n').filter(line => line.trim());
+                // Parse CSV properly handling commas in values
+                const lines = csvText.split('\n');
                 const sheetHistory = {};
                 
                 // Skip header row (index 0), process data rows
                 for (let i = 1; i < lines.length; i++) {
-                    const line = lines[i];
-                    // Simple CSV parsing - split by comma
-                    const parts = line.split(',').map(p => p.trim());
+                    const line = lines[i].trim();
+                    if (!line) continue; // Skip empty lines
                     
-                    if (parts.length >= 3) {
-                        const monthRaw = parts[0].replace(/['"]/g, '').trim();
-                        const yearRaw = parts[1].replace(/['"]/g, '').trim();
-                        const themeRaw = parts[2].replace(/['"]/g, '').trim();
+                    // Better CSV parsing that handles commas in quoted values
+                    const matches = line.match(/(?:^|,)("(?:[^"]|"")*"|[^,]*)/g);
+                    if (!matches || matches.length < 3) continue;
+                    
+                    // Clean up the matched values
+                    const parts = matches.map(m => {
+                        let val = m.replace(/^,/, ''); // Remove leading comma
+                        val = val.replace(/^"(.*)"$/, '$1'); // Remove quotes
+                        val = val.replace(/""/g, '"'); // Unescape double quotes
+                        return val.trim();
+                    });
+                    
+                    const monthRaw = parts[0];
+                    const yearRaw = parts[1];
+                    const themeRaw = parts[2];
+                    
+                    // Only process if theme is not empty
+                    if (themeRaw) {
+                        // Parse month and year as integers
+                        const monthNum = parseInt(monthRaw);
+                        const yearNum = parseInt(yearRaw);
                         
-                        // Only process if theme is not empty
-                        if (themeRaw) {
-                            // Parse month and year as integers
-                            const monthNum = parseInt(monthRaw);
-                            const yearNum = parseInt(yearRaw);
+                        // Validate parsed values
+                        if (!isNaN(monthNum) && !isNaN(yearNum) && monthNum >= 1 && monthNum <= 12) {
+                            // Format month with leading zero if needed
+                            const monthFormatted = String(monthNum).padStart(2, '0');
+                            const monthKey = `${yearNum}-${monthFormatted}`;
+                            sheetHistory[monthKey] = themeRaw;
                             
-                            // Validate parsed values
-                            if (!isNaN(monthNum) && !isNaN(yearNum) && monthNum >= 1 && monthNum <= 12) {
-                                // Format month with leading zero if needed
-                                const monthFormatted = String(monthNum).padStart(2, '0');
-                                const monthKey = `${yearNum}-${monthFormatted}`;
-                                sheetHistory[monthKey] = themeRaw;
-                                
-                                console.log(`Added: ${monthKey} = ${themeRaw}`);
-                            }
+                            console.log(`Added: ${monthKey} = ${themeRaw}`);
                         }
                     }
                 }
