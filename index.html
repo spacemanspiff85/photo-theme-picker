@@ -918,7 +918,6 @@
                             <th>Month</th>
                             <th>Theme</th>
                             <th>Category</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody">
@@ -1093,24 +1092,36 @@
                 const response = await fetch(SHEET_CSV_URL);
                 const csvText = await response.text();
                 
-                // Parse CSV
-                const rows = csvText.split('\n').map(row => {
-                    // Handle quoted values in CSV
-                    const matches = row.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
-                    return matches ? matches.map(val => val.replace(/^"|"$/g, '').trim()) : [];
-                });
-                
+                // Parse CSV - split by newline and filter empty lines
+                const lines = csvText.split('\n').filter(line => line.trim());
                 const sheetHistory = {};
+                
                 // Skip header row (index 0), process data rows
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (row.length >= 3 && row[2] && row[2].trim()) { // Check if theme exists and is not empty
-                        const month = String(row[0]).padStart(2, '0');
-                        const year = row[1];
-                        const theme = row[2].trim();
-                        if (month && year && theme) {
-                            const monthKey = `${year}-${month}`;
-                            sheetHistory[monthKey] = theme;
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    // Simple CSV parsing - split by comma
+                    const parts = line.split(',').map(p => p.trim());
+                    
+                    if (parts.length >= 3) {
+                        const monthRaw = parts[0].replace(/['"]/g, '').trim();
+                        const yearRaw = parts[1].replace(/['"]/g, '').trim();
+                        const themeRaw = parts[2].replace(/['"]/g, '').trim();
+                        
+                        // Only process if theme is not empty
+                        if (themeRaw) {
+                            // Parse month and year as integers
+                            const monthNum = parseInt(monthRaw);
+                            const yearNum = parseInt(yearRaw);
+                            
+                            // Validate parsed values
+                            if (!isNaN(monthNum) && !isNaN(yearNum) && monthNum >= 1 && monthNum <= 12) {
+                                // Format month with leading zero if needed
+                                const monthFormatted = String(monthNum).padStart(2, '0');
+                                const monthKey = `${yearNum}-${monthFormatted}`;
+                                sheetHistory[monthKey] = themeRaw;
+                                
+                                console.log(`Added: ${monthKey} = ${themeRaw}`);
+                            }
                         }
                     }
                 }
@@ -1394,7 +1405,7 @@
             if (historyEntries.length === 0) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td colspan="4" style="text-align: center; color: #999;">
+                    <td colspan="3" style="text-align: center; color: #999;">
                         No history yet. Add entries to the Google Sheet.
                     </td>
                 `;
@@ -1408,11 +1419,6 @@
                         <td>${formatMonth(monthKey)}</td>
                         <td>${theme}</td>
                         <td>${category}</td>
-                        <td>
-                            <button class="btn-secondary" onclick="window.open('${SHEET_URL}', '_blank')" style="font-size: 0.9em; padding: 5px 10px;">
-                                Edit in Sheet
-                            </button>
-                        </td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -1422,7 +1428,15 @@
         // Format month for display
         function formatMonth(monthKey) {
             const [year, month] = monthKey.split('-');
-            const date = new Date(year, parseInt(month) - 1);
+            const monthNum = parseInt(month);
+            const yearNum = parseInt(year);
+            
+            // Validate the parsed values
+            if (isNaN(monthNum) || isNaN(yearNum) || monthNum < 1 || monthNum > 12) {
+                return monthKey; // Return original if invalid
+            }
+            
+            const date = new Date(yearNum, monthNum - 1, 1);
             return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
         }
 
