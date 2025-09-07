@@ -1120,18 +1120,24 @@
                     // Try multiple parsing methods
                     let parsed = false;
                     
-                    // Method 1: Simple split (works if no commas in theme names)
+                    // Method 1: Parse CSV with month names
                     const parts = line.split(',').map(p => p.replace(/"/g, '').trim());
                     if (parts.length >= 3) {
                         const monthRaw = parts[0];
                         const yearRaw = parts[1];
-                        // Join all remaining parts in case theme has commas
-                        const themeRaw = parts.slice(2).join(', ');
+                        const themeRaw = parts[2]; // Only take the theme, ignore category
                         
                         console.log(`↳ Method 1 parsed: Month="${monthRaw}", Year="${yearRaw}", Theme="${themeRaw}"`);
                         
-                        if (monthRaw && yearRaw && themeRaw) {
-                            const monthNum = parseInt(monthRaw);
+                        // Convert month name to number
+                        const monthMap = {
+                            'January': 1, 'February': 2, 'March': 3, 'April': 4,
+                            'May': 5, 'June': 6, 'July': 7, 'August': 8,
+                            'September': 9, 'October': 10, 'November': 11, 'December': 12
+                        };
+                        
+                        if (monthRaw && yearRaw && themeRaw && themeRaw !== 'skipped') {
+                            const monthNum = monthMap[monthRaw] || parseInt(monthRaw); // Support both names and numbers
                             const yearNum = parseInt(yearRaw);
                             
                             if (!isNaN(monthNum) && !isNaN(yearNum) && monthNum >= 1 && monthNum <= 12 && yearNum > 2020) {
@@ -1145,7 +1151,7 @@
                                 console.log(`❌ Invalid month/year: month=${monthNum}, year=${yearNum}`);
                             }
                         } else {
-                            console.log(`❌ Missing data: month="${monthRaw}", year="${yearRaw}", theme="${themeRaw}"`);
+                            console.log(`❌ Missing/skipped data: month="${monthRaw}", year="${yearRaw}", theme="${themeRaw}"`);
                         }
                     }
                     
