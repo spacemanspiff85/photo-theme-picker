@@ -903,12 +903,12 @@
                 
                 <div class="history-controls">
                     <div>
-                        <span>Last 12 months of themes</span>
+                        <span>Theme History</span>
                         <span id="syncStatus" style="margin-left: 15px; color: #666; font-size: 0.9em;"></span>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button class="btn-secondary" id="refreshHistoryBtn">🔄 Refresh</button>
-                        <button class="btn-secondary" id="addHistoryBtn">+ Add to Google Sheet</button>
+                        <button class="btn-secondary" id="addHistoryBtn">📝 Edit Google Sheet</button>
                     </div>
                 </div>
 
@@ -1084,36 +1084,45 @@
 
         // Google Sheets configuration
         const SHEET_ID = '1pcaJNOQlzyxkfuOFVSDOQLWdAPbiy7GmvJixtILRwM4';
-        const SHEET_RANGE = 'A2:D100'; // Rows 2-100 (skipping header)
-        const SHEETS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_RANGE}?key=AIzaSyBMz_1mscl8DjLHSBxGx9Wh8YyKxyDvDlk`;
+        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}`;
+        const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
-        // Fetch history from Google Sheets
+        // Fetch history from Google Sheets (using CSV format)
         async function fetchHistoryFromSheet() {
             try {
-                const response = await fetch(SHEETS_API_URL);
-                const data = await response.json();
+                const response = await fetch(SHEET_CSV_URL);
+                const csvText = await response.text();
                 
-                if (data.values) {
-                    const sheetHistory = {};
-                    data.values.forEach(row => {
-                        if (row.length >= 3) {
-                            const month = row[0].padStart(2, '0');
-                            const year = row[1];
-                            const theme = row[2];
+                // Parse CSV
+                const rows = csvText.split('\n').map(row => {
+                    // Handle quoted values in CSV
+                    const matches = row.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
+                    return matches ? matches.map(val => val.replace(/^"|"$/g, '').trim()) : [];
+                });
+                
+                const sheetHistory = {};
+                // Skip header row (index 0), process data rows
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.length >= 3 && row[2] && row[2].trim()) { // Check if theme exists and is not empty
+                        const month = String(row[0]).padStart(2, '0');
+                        const year = row[1];
+                        const theme = row[2].trim();
+                        if (month && year && theme) {
                             const monthKey = `${year}-${month}`;
                             sheetHistory[monthKey] = theme;
                         }
-                    });
-                    
-                    appState.history = sheetHistory;
-                    appState.lastSyncTime = new Date();
-                    updateClubMadeThemes();
-                    saveState();
-                    updateHistoryTable();
-                    updateSyncStatus();
-                    
-                    return true;
+                    }
                 }
+                
+                appState.history = sheetHistory;
+                appState.lastSyncTime = new Date();
+                updateClubMadeThemes();
+                saveState();
+                updateHistoryTable();
+                updateSyncStatus();
+                
+                return true;
             } catch (error) {
                 console.error('Failed to fetch from Google Sheets:', error);
                 // Fall back to local data if sheet fails
@@ -1377,31 +1386,37 @@
             const tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
             
-            // Get last 12 months
-            const months = [];
-            const now = new Date();
-            for (let i = 0; i < 12; i++) {
-                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                months.push(monthKey);
-            }
+            // Get all history entries and sort by date (newest first)
+            const historyEntries = Object.entries(appState.history)
+                .filter(([monthKey, theme]) => theme && theme.trim()) // Filter out empty themes
+                .sort((a, b) => b[0].localeCompare(a[0])); // Sort by date descending
             
-            months.forEach(month => {
+            if (historyEntries.length === 0) {
                 const row = document.createElement('tr');
-                const theme = appState.history[month] || '-';
-                const category = theme === '-' ? '-' : getThemeCategory(theme);
-                
                 row.innerHTML = `
-                    <td>${formatMonth(month)}</td>
-                    <td>${theme}</td>
-                    <td>${category}</td>
-                    <td>
-                        <button class="edit-btn" onclick="editHistory('${month}')">Edit</button>
-                        ${theme !== '-' ? `<button class="delete-btn" onclick="deleteHistory('${month}')">Delete</button>` : ''}
+                    <td colspan="4" style="text-align: center; color: #999;">
+                        No history yet. Add entries to the Google Sheet.
                     </td>
                 `;
                 tbody.appendChild(row);
-            });
+            } else {
+                historyEntries.forEach(([monthKey, theme]) => {
+                    const row = document.createElement('tr');
+                    const category = getThemeCategory(theme);
+                    
+                    row.innerHTML = `
+                        <td>${formatMonth(monthKey)}</td>
+                        <td>${theme}</td>
+                        <td>${category}</td>
+                        <td>
+                            <button class="btn-secondary" onclick="window.open('${SHEET_URL}', '_blank')" style="font-size: 0.9em; padding: 5px 10px;">
+                                Edit in Sheet
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
         }
 
         // Format month for display
@@ -1812,9 +1827,9 @@
                 btn.textContent = '🔄 Refresh';
             });
             
-            // Add history button
+            // Add history button - opens Google Sheet directly
             document.getElementById('addHistoryBtn').addEventListener('click', () => {
-                alert('To add a new entry:\n\n1. Open the Google Sheet directly\n2. Add your entry in the next available row\n3. Click Refresh to see it here\n\nSheet URL: https://docs.google.com/spreadsheets/d/' + SHEET_ID);
+                window.open(SHEET_URL, '_blank');
             });
             
             // History modal save
@@ -1846,17 +1861,11 @@
                 const year = document.getElementById('usedYear').value;
                 
                 if (theme) {
-                    // Show instructions for updating Google Sheet
-                    alert(`To record "${theme}" as the winner for ${month}/${year}:\n\n` +
-                          `1. Open the Google Sheet\n` +
-                          `2. Add a new row with:\n` +
-                          `   - Month: ${month}\n` +
-                          `   - Year: ${year}\n` +
-                          `   - Theme: ${theme}\n` +
-                          `   - Category: ${getThemeCategory(theme)}\n` +
-                          `3. Save the sheet\n` +
-                          `4. Click Refresh here to see the update\n\n` +
-                          `Sheet URL: https://docs.google.com/spreadsheets/d/${SHEET_ID}`);
+                    // Open Google Sheet in new tab
+                    window.open(SHEET_URL, '_blank');
+                    
+                    // Show quick reminder
+                    alert(`Opening Google Sheet...\n\nPlease add:\n• Month: ${month}\n• Year: ${year}\n• Theme: ${theme}\n• Category: ${getThemeCategory(theme)}\n\nThen click Refresh to see the update.`);
                     
                     // Reset UI
                     document.getElementById('customTheme').value = '';
